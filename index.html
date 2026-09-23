@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Inventario</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f1f5f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 pb-12">
+
+  <!-- Header Principal con Botón de Actualizar Datos -->
+  <header class="bg-[#2a2b72] text-white px-6 py-5 shadow-lg">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="p-2.5 bg-indigo-500/20 rounded-xl">
+          <i class="fa-solid fa-cubes text-2xl text-indigo-300"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold tracking-tight">Dashboard de Inventario</h1>
+          <p class="text-xs text-indigo-200">Monitoreo y análisis en tiempo real desde Google Sheets</p>
+        </div>
+      </div>
+      
+      <!-- Botón Actualizar Datos -->
+      <button 
+        onclick="refreshData()" 
+        id="btnRefresh"
+        class="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 shadow-md hover:shadow-indigo-500/25"
+      >
+        <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i>
+        <span>Actualizar Datos</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 mt-6 space-y-6">
+
+    <!-- Tarjetas de KPIs (KPI Cards) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- KPI 1 -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
+        <div class="p-3.5 bg-indigo-50 text-indigo-600 rounded-xl">
+          <i class="fa-solid fa-box text-xl"></i>
+        </div>
+        <div>
+          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total Unidades</span>
+          <span class="text-2xl font-extrabold text-slate-800" id="kpiUnidades">40.634</span>
+        </div>
+      </div>
+
+      <!-- KPI 2 -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
+        <div class="p-3.5 bg-emerald-50 text-emerald-600 rounded-xl">
+          <i class="fa-solid fa-list-check text-xl"></i>
+        </div>
+        <div>
+          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total Registros</span>
+          <span class="text-2xl font-extrabold text-slate-800" id="kpiRegistros">1.059</span>
+        </div>
+      </div>
+
+      <!-- KPI 3 -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
+        <div class="p-3.5 bg-amber-50 text-amber-600 rounded-xl">
+          <i class="fa-solid fa-warehouse text-xl"></i>
+        </div>
+        <div>
+          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Sedes Activas</span>
+          <span class="text-2xl font-extrabold text-slate-800" id="kpiSedes">8</span>
+        </div>
+      </div>
+
+      <!-- KPI 4 -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
+        <div class="p-3.5 bg-purple-50 text-purple-600 rounded-xl">
+          <i class="fa-solid fa-tags text-xl"></i>
+        </div>
+        <div>
+          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Marcas Registradas</span>
+          <span class="text-2xl font-extrabold text-slate-800" id="kpiMarcas">10</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtros de Inventario -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+      <div class="flex justify-between items-center mb-4">
+        <div class="flex items-center gap-2 text-slate-700 font-bold text-base">
+          <i class="fa-solid fa-filter text-indigo-600"></i>
+          <span>Filtros de Inventario</span>
+        </div>
+        <button onclick="clearFilters()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">Limpiar Filtros</button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Sede / Bodega</label>
+          <select id="selectBodega" onchange="applyFilters()" class="w-full bg-slate-50 border border-slate-300 text-slate-700 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-indigo-500">
+            <option value="">Todas las Sedes</option>
+            <option value="AGUACHICA">AGUACHICA</option>
+            <option value="VALLEDUPAR">VALLEDUPAR</option>
+            <option value="BARRANQUILLA">BARRANQUILLA</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Marca</label>
+          <select id="selectMarca" onchange="applyFilters()" class="w-full bg-slate-50 border border-slate-300 text-slate-700 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-indigo-500">
+            <option value="">Todas las Marcas</option>
+            <option value="MOBIL">MOBIL</option>
+            <option value="CRC">CRC</option>
+            <option value="TERPEL">TERPEL</option>
+            <option value="SIMONIZ">SIMONIZ</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Tarifa IVA</label>
+          <select id="selectIva" onchange="applyFilters()" class="w-full bg-slate-50 border border-slate-300 text-slate-700 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-indigo-500">
+            <option value="">Todos los Tratamientos IVA</option>
+            <option value="EXENTO">EXENTO</option>
+            <option value="GRAVADO AL 19%">GRAVADO AL 19%</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráficos Side-by-Side -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+        <h3 class="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-chart-simple text-indigo-600"></i> Stock por Sede Consolidada
+        </h3>
+        <div class="h-64 relative">
+          <canvas id="barChart"></canvas>
+        </div>
+      </div>
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+        <h3 class="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-chart-pie text-indigo-600"></i> Distribución por Marcas Principales
+        </h3>
+        <div class="h-64 relative flex items-center justify-center">
+          <canvas id="donutChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de Detalle de Productos -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-2 text-indigo-900 font-bold text-base">
+          <i class="fa-solid fa-table-cells text-indigo-600"></i>
+          <span>Detalle de Productos</span>
+        </div>
+        <div class="relative w-full sm:w-80">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </span>
+          <input 
+            type="text" 
+            id="searchInput" 
+            onkeyup="applyFilters()" 
+            placeholder="Buscar por referencia, producto..." 
+            class="w-full pl-9 pr-4 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-700 focus:ring-2 focus:ring-indigo-500"
+          >
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-600">
+          <thead class="bg-slate-100 uppercase text-slate-500 font-bold tracking-wider border-b border-slate-200">
+            <tr>
+              <th class="px-4 py-3">Referencia</th>
+              <th class="px-4 py-3">Detalle / Descripción</th>
+              <th class="px-4 py-3">Marca</th>
+              <th class="px-4 py-3">Sede</th>
+              <th class="px-4 py-3">Bodega</th>
+              <th class="px-4 py-3 text-right">Cantidad</th>
+              <th class="px-4 py-3 text-center">Tarifa IVA</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-slate-100 bg-white">
+            <!-- Filas dinámicas -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // Función para refrescar/actualizar los datos (simula la petición fetch al servidor)
+    function refreshData() {
+      const icon = document.getElementById('refreshIcon');
+      icon.classList.add('fa-spin');
+      setTimeout(() => {
+        icon.classList.remove('fa-spin');
+        alert("¡Datos actualizados desde el origen con éxito!");
+      }, 1000);
+    }
+  </script>
+</body>
+</html>
