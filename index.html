@@ -30,7 +30,7 @@
       <button 
         onclick="refreshData()" 
         id="btnRefresh"
-        class="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 shadow-md hover:shadow-indigo-500/25"
+        class="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 shadow-md hover:shadow-indigo-500/25 cursor-pointer"
       >
         <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i>
         <span>Actualizar Datos</span>
@@ -40,49 +40,45 @@
 
   <main class="max-w-7xl mx-auto px-4 sm:px-6 mt-6 space-y-6">
 
-    <!-- Tarjetas de KPIs (KPI Cards) -->
+    <!-- Tarjetas de KPIs -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <!-- KPI 1 -->
       <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
         <div class="p-3.5 bg-indigo-50 text-indigo-600 rounded-xl">
           <i class="fa-solid fa-box text-xl"></i>
         </div>
         <div>
           <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total Unidades</span>
-          <span class="text-2xl font-extrabold text-slate-800" id="kpiUnidades">40.634</span>
+          <span class="text-2xl font-extrabold text-slate-800" id="kpiUnidades">0</span>
         </div>
       </div>
 
-      <!-- KPI 2 -->
       <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
         <div class="p-3.5 bg-emerald-50 text-emerald-600 rounded-xl">
           <i class="fa-solid fa-list-check text-xl"></i>
         </div>
         <div>
           <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total Registros</span>
-          <span class="text-2xl font-extrabold text-slate-800" id="kpiRegistros">1.059</span>
+          <span class="text-2xl font-extrabold text-slate-800" id="kpiRegistros">0</span>
         </div>
       </div>
 
-      <!-- KPI 3 -->
       <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
         <div class="p-3.5 bg-amber-50 text-amber-600 rounded-xl">
           <i class="fa-solid fa-warehouse text-xl"></i>
         </div>
         <div>
           <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Sedes Activas</span>
-          <span class="text-2xl font-extrabold text-slate-800" id="kpiSedes">8</span>
+          <span class="text-2xl font-extrabold text-slate-800" id="kpiSedes">0</span>
         </div>
       </div>
 
-      <!-- KPI 4 -->
       <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
         <div class="p-3.5 bg-purple-50 text-purple-600 rounded-xl">
           <i class="fa-solid fa-tags text-xl"></i>
         </div>
         <div>
           <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Marcas Registradas</span>
-          <span class="text-2xl font-extrabold text-slate-800" id="kpiMarcas">10</span>
+          <span class="text-2xl font-extrabold text-slate-800" id="kpiMarcas">0</span>
         </div>
       </div>
     </div>
@@ -94,26 +90,19 @@
           <i class="fa-solid fa-filter text-indigo-600"></i>
           <span>Filtros de Inventario</span>
         </div>
-        <button onclick="clearFilters()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">Limpiar Filtros</button>
+        <button onclick="clearFilters()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer">Limpiar Filtros</button>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label class="block text-xs font-semibold text-slate-500 mb-1">Sede / Bodega</label>
           <select id="selectBodega" onchange="applyFilters()" class="w-full bg-slate-50 border border-slate-300 text-slate-700 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-indigo-500">
             <option value="">Todas las Sedes</option>
-            <option value="AGUACHICA">AGUACHICA</option>
-            <option value="VALLEDUPAR">VALLEDUPAR</option>
-            <option value="BARRANQUILLA">BARRANQUILLA</option>
           </select>
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-500 mb-1">Marca</label>
           <select id="selectMarca" onchange="applyFilters()" class="w-full bg-slate-50 border border-slate-300 text-slate-700 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-indigo-500">
             <option value="">Todas las Marcas</option>
-            <option value="MOBIL">MOBIL</option>
-            <option value="CRC">CRC</option>
-            <option value="TERPEL">TERPEL</option>
-            <option value="SIMONIZ">SIMONIZ</option>
           </select>
         </div>
         <div>
@@ -127,7 +116,7 @@
       </div>
     </div>
 
-    <!-- Gráficos Side-by-Side -->
+    <!-- Gráficos -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
         <h3 class="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
@@ -181,7 +170,9 @@
             </tr>
           </thead>
           <tbody id="tableBody" class="divide-y divide-slate-100 bg-white">
-            <!-- Filas dinámicas -->
+            <tr>
+              <td colspan="7" class="text-center py-8 text-slate-400">Cargando datos desde Google Sheets...</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -190,15 +181,189 @@
   </main>
 
   <script>
-    // Función para refrescar/actualizar los datos (simula la petición fetch al servidor)
-    function refreshData() {
+    const API_URL = "https://script.google.com/macros/s/AKfycbzDw7lVhpg0rp3JZIhLWUQBMCHY2YBki1QZ5s-Xy2WRMZ8fhAd-ueY7OJm3phIwMz0u/exec";
+    let inventoryData = [];
+    let barChartInst = null;
+    let donutChartInst = null;
+
+    async function loadDataFromGoogleSheets() {
       const icon = document.getElementById('refreshIcon');
-      icon.classList.add('fa-spin');
-      setTimeout(() => {
-        icon.classList.remove('fa-spin');
-        alert("¡Datos actualizados desde el origen con éxito!");
-      }, 1000);
+      if (icon) icon.classList.add('fa-spin');
+
+      try {
+        const response = await fetch(API_URL);
+        const rawData = await response.json();
+
+        if (Array.isArray(rawData)) {
+          inventoryData = rawData.map(item => ({
+            ref: String(item["Ref2"] || item["Referencia"] || item["REF"] || "000000"),
+            detalle: String(item["Detalle"] || item["DETALLE / DESCRIPCIÓN"] || item["Detalle / Descripción"] || ""),
+            marca: String(item["Marca"] || item["MARCA"] || "OTRAS"),
+            sede: String(item["Sede"] || item["SEDE"] || ""),
+            bodega: String(item["Bodega"] || item["BODEGA"] || ""),
+            cantidad: Number(item["Cantidad"] || item["CANTIDAD"] || 0),
+            iva: String(item["Tarifa de iva"] || item["Tarifa IVA"] || item["TARIFA IVA"] || "EXENTO")
+          }));
+
+          populateSelectOptions();
+          applyFilters();
+        } else {
+          console.error("Respuesta no válida de Apps Script:", rawData);
+        }
+      } catch (error) {
+        console.error("Error al obtener los datos:", error);
+      } finally {
+        if (icon) icon.classList.remove('fa-spin');
+      }
     }
+
+    function populateSelectOptions() {
+      const bodegas = [...new Set(inventoryData.map(d => d.bodega).filter(Boolean))].sort();
+      const marcas = [...new Set(inventoryData.map(d => d.marca).filter(Boolean))].sort();
+
+      const selectBodega = document.getElementById('selectBodega');
+      const selectMarca = document.getElementById('selectMarca');
+
+      selectBodega.innerHTML = '<option value="">Todas las Sedes</option>';
+      bodegas.forEach(b => selectBodega.innerHTML += `<option value="${b}">${b}</option>`);
+
+      selectMarca.innerHTML = '<option value="">Todas las Marcas</option>';
+      marcas.forEach(m => selectMarca.innerHTML += `<option value="${m}">${m}</option>`);
+    }
+
+    function applyFilters() {
+      const selectedBodega = document.getElementById('selectBodega').value;
+      const selectedMarca = document.getElementById('selectMarca').value;
+      const selectedIva = document.getElementById('selectIva').value;
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+      const filtered = inventoryData.filter(item => {
+        const matchBodega = !selectedBodega || item.bodega === selectedBodega;
+        const matchMarca = !selectedMarca || item.marca === selectedMarca;
+        const matchIva = !selectedIva || item.iva.toUpperCase().includes(selectedIva.toUpperCase());
+        const matchSearch = !searchTerm || 
+          item.ref.toLowerCase().includes(searchTerm) || 
+          item.detalle.toLowerCase().includes(searchTerm) ||
+          item.marca.toLowerCase().includes(searchTerm) ||
+          item.bodega.toLowerCase().includes(searchTerm);
+
+        return matchBodega && matchMarca && matchIva && matchSearch;
+      });
+
+      updateKPIs(filtered);
+      renderTable(filtered);
+      renderCharts(filtered);
+    }
+
+    function updateKPIs(data) {
+      const totalUnits = data.reduce((acc, curr) => acc + curr.cantidad, 0);
+      const totalRecords = data.length;
+      const activeSedes = new Set(data.map(d => d.bodega).filter(Boolean)).size;
+      const registeredBrands = new Set(data.map(d => d.marca).filter(Boolean)).size;
+
+      document.getElementById('kpiUnidades').innerText = totalUnits.toLocaleString();
+      document.getElementById('kpiRegistros').innerText = totalRecords.toLocaleString();
+      document.getElementById('kpiSedes').innerText = activeSedes;
+      document.getElementById('kpiMarcas').innerText = registeredBrands;
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-6 text-slate-400">No se encontraron registros.</td></tr>';
+        return;
+      }
+
+      data.forEach(item => {
+        const row = document.createElement('tr');
+        row.className = "hover:bg-slate-50 transition-colors";
+
+        const isExento = item.iva.toUpperCase().includes('EXENTO');
+        const ivaBadge = isExento 
+          ? '<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 tracking-wide">EXENTO</span>'
+          : '<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 tracking-wide">GRAVADO AL 19%</span>';
+
+        row.innerHTML = `
+          <td class="px-4 py-3 font-semibold text-slate-700">${item.ref}</td>
+          <td class="px-4 py-3 font-medium text-slate-800">${item.detalle}</td>
+          <td class="px-4 py-3">
+            <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium text-[11px]">${item.marca}</span>
+          </td>
+          <td class="px-4 py-3 text-slate-400">${item.sede || '-'}</td>
+          <td class="px-4 py-3 text-slate-600 font-medium">${item.bodega}</td>
+          <td class="px-4 py-3 text-right font-bold text-slate-800">${item.cantidad.toLocaleString()}</td>
+          <td class="px-4 py-3 text-center">${ivaBadge}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function renderCharts(data) {
+      const bodegaGroup = {};
+      data.forEach(d => {
+        bodegaGroup[d.bodega] = (bodegaGroup[d.bodega] || 0) + d.cantidad;
+      });
+
+      const marcaGroup = {};
+      data.forEach(d => {
+        marcaGroup[d.marca] = (marcaGroup[d.marca] || 0) + d.cantidad;
+      });
+
+      const ctxBar = document.getElementById('barChart').getContext('2d');
+      if (barChartInst) barChartInst.destroy();
+      barChartInst = new Chart(ctxBar, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(bodegaGroup),
+          datasets: [{
+            label: 'Unidades',
+            data: Object.values(bodegaGroup),
+            backgroundColor: '#4f46e5',
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+
+      const ctxDonut = document.getElementById('donutChart').getContext('2d');
+      if (donutChartInst) donutChartInst.destroy();
+      donutChartInst = new Chart(ctxDonut, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(marcaGroup),
+          datasets: [{
+            data: Object.values(marcaGroup),
+            backgroundColor: ['#4f46e5', '#06b6d4', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } }
+        }
+      });
+    }
+
+    function clearFilters() {
+      document.getElementById('selectBodega').value = '';
+      document.getElementById('selectMarca').value = '';
+      document.getElementById('selectIva').value = '';
+      document.getElementById('searchInput').value = '';
+      applyFilters();
+    }
+
+    function refreshData() {
+      loadDataFromGoogleSheets();
+    }
+
+    document.addEventListener('DOMContentLoaded', loadDataFromGoogleSheets);
   </script>
 </body>
 </html>
