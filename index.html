@@ -13,7 +13,7 @@
 </head>
 <body class="min-h-screen text-slate-800 pb-12">
 
-  <!-- Header Principal con Botón de Actualizar Datos -->
+  <!-- Header Principal -->
   <header class="bg-[#2a2b72] text-white px-6 py-5 shadow-lg">
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div class="flex items-center gap-3">
@@ -67,7 +67,7 @@
           <i class="fa-solid fa-warehouse text-xl"></i>
         </div>
         <div>
-          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Sedes / Bodegas</span>
+          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Sedes Activas</span>
           <span class="text-2xl font-extrabold text-slate-800" id="kpiSedes">0</span>
         </div>
       </div>
@@ -94,9 +94,9 @@
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label class="block text-xs font-semibold text-slate-500 mb-1">Bodega / Sede</label>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Sede / Bodega</label>
           <select id="selectBodega" onchange="applyFilters()" class="w-full bg-slate-50 border border-slate-300 text-slate-700 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-indigo-500">
-            <option value="">Todas las Bodegas</option>
+            <option value="">Todas las Sedes</option>
           </select>
         </div>
         <div>
@@ -120,7 +120,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
         <h3 class="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
-          <i class="fa-solid fa-chart-simple text-indigo-600"></i> Stock por Bodega
+          <i class="fa-solid fa-chart-simple text-indigo-600"></i> Stock por Sede Consolidada
         </h3>
         <div class="h-64 relative">
           <canvas id="barChart"></canvas>
@@ -163,6 +163,7 @@
               <th class="px-4 py-3">Referencia</th>
               <th class="px-4 py-3">Detalle / Descripción</th>
               <th class="px-4 py-3">Marca</th>
+              <th class="px-4 py-3">Sede</th>
               <th class="px-4 py-3">Bodega</th>
               <th class="px-4 py-3 text-right">Cantidad</th>
               <th class="px-4 py-3 text-center">Tarifa IVA</th>
@@ -170,7 +171,7 @@
           </thead>
           <tbody id="tableBody" class="divide-y divide-slate-100 bg-white">
             <tr>
-              <td colspan="6" class="text-center py-8 text-slate-400">Cargando datos desde Google Sheets...</td>
+              <td colspan="7" class="text-center py-8 text-slate-400">Cargando datos desde Google Sheets...</td>
             </tr>
           </tbody>
         </table>
@@ -180,7 +181,6 @@
   </main>
 
   <script>
-    // URL de la Web App obtenida al Implementar en Apps Script
     const API_URL = "https://script.google.com/macros/s/AKfycbzDw7lVhpg0rp3JZIhLWUQBMCHY2YBki1QZ5s-Xy2WRMZ8fhAd-ueY7OJm3phIwMz0u/exec";
     
     let inventoryData = [];
@@ -196,61 +196,65 @@
         const rawData = await response.json();
 
         if (Array.isArray(rawData)) {
-          // Mapeo adaptado a los encabezados reales de tu Google Sheet
+          // Mapeo exacto según las columnas de la hoja de cálculo
           inventoryData = rawData.map(item => ({
-            ref: String(item["Referencia"] || item["Ref2"] || item["REF"] || "000000"),
-            detalle: String(item["Detalle"] || item["DETALLE / DESCRIPCIÓN"] || ""),
-            marca: String(item["Marca"] || item["MARCA"] || "OTRAS"),
-            bodega: String(item["Bodega"] || item["BODEGA"] || item["CONS BODEGA"] || ""),
-            cantidad: Number(item["Cantidad"] || item["CANTIDAD"] || 0),
-            iva: String(item["Tarifa de iva"] || item["Tarifa IVA"] || item["TARIFA IVA"] || "EXENTO")
+            ref: String(item["Referencia"] || item["Ref2"] || "000000"),
+            detalle: String(item["Detalle"] || ""),
+            marca: String(item["Marca"] || "OTRAS"),
+            codMarca: String(item["Cod.Marca"] || ""),
+            sede: String(item["Bodega"] || ""),             // Columna F (Sede / Ciudad)
+            consBodega: String(item["CONS BODEGA"] || ""),   // Columna G (Código/Consecutivo Bodega)
+            cantidad: Number(item["Cantidad"] || 0),        // Columna H
+            porcentajeIva: String(item["Porcentaje iva"] || ""), // Columna I
+            iva: String(item["Tarifa de iva"] || "EXENTO")  // Columna J
           }));
 
           populateSelectOptions();
           applyFilters();
         } else {
           console.error("Respuesta no válida de Apps Script:", rawData);
-          document.getElementById('tableBody').innerHTML = '<tr><td colspan="6" class="text-center py-6 text-red-500 font-semibold">Error al obtener los datos. Verifica la API en Google Apps Script.</td></tr>';
+          document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="text-center py-6 text-red-500 font-semibold">Error al obtener los datos. Verifica Apps Script.</td></tr>';
         }
       } catch (error) {
         console.error("Error al obtener los datos:", error);
-        document.getElementById('tableBody').innerHTML = '<tr><td colspan="6" class="text-center py-6 text-red-500 font-semibold">No se pudo conectar con Google Sheets.</td></tr>';
+        document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="text-center py-6 text-red-500 font-semibold">No se pudo conectar con Google Sheets.</td></tr>';
       } finally {
         if (icon) icon.classList.remove('fa-spin');
       }
     }
 
     function populateSelectOptions() {
-      const bodegas = [...new Set(inventoryData.map(d => d.bodega).filter(Boolean))].sort();
+      const sedes = [...new Set(inventoryData.map(d => d.sede).filter(Boolean))].sort();
       const marcas = [...new Set(inventoryData.map(d => d.marca).filter(Boolean))].sort();
 
       const selectBodega = document.getElementById('selectBodega');
       const selectMarca = document.getElementById('selectMarca');
 
-      selectBodega.innerHTML = '<option value="">Todas las Bodegas</option>';
-      bodegas.forEach(b => selectBodega.innerHTML += `<option value="${b}">${b}</option>`);
+      selectBodega.innerHTML = '<option value="">Todas las Sedes</option>';
+      sedes.forEach(s => selectBodega.innerHTML += `<option value="${s}">${s}</option>`);
 
       selectMarca.innerHTML = '<option value="">Todas las Marcas</option>';
       marcas.forEach(m => selectMarca.innerHTML += `<option value="${m}">${m}</option>`);
     }
 
     function applyFilters() {
-      const selectedBodega = document.getElementById('selectBodega').value;
+      const selectedSede = document.getElementById('selectBodega').value;
       const selectedMarca = document.getElementById('selectMarca').value;
       const selectedIva = document.getElementById('selectIva').value;
       const searchTerm = document.getElementById('searchInput').value.toLowerCase();
 
       const filtered = inventoryData.filter(item => {
-        const matchBodega = !selectedBodega || item.bodega === selectedBodega;
+        const matchSede = !selectedSede || item.sede === selectedSede;
         const matchMarca = !selectedMarca || item.marca === selectedMarca;
         const matchIva = !selectedIva || item.iva.toUpperCase().includes(selectedIva.toUpperCase());
         const matchSearch = !searchTerm || 
           item.ref.toLowerCase().includes(searchTerm) || 
           item.detalle.toLowerCase().includes(searchTerm) ||
           item.marca.toLowerCase().includes(searchTerm) ||
-          item.bodega.toLowerCase().includes(searchTerm);
+          item.sede.toLowerCase().includes(searchTerm) ||
+          item.consBodega.toLowerCase().includes(searchTerm);
 
-        return matchBodega && matchMarca && matchIva && matchSearch;
+        return matchSede && matchMarca && matchIva && matchSearch;
       });
 
       updateKPIs(filtered);
@@ -261,7 +265,7 @@
     function updateKPIs(data) {
       const totalUnits = data.reduce((acc, curr) => acc + curr.cantidad, 0);
       const totalRecords = data.length;
-      const activeSedes = new Set(data.map(d => d.bodega).filter(Boolean)).size;
+      const activeSedes = new Set(data.map(d => d.sede).filter(Boolean)).size;
       const registeredBrands = new Set(data.map(d => d.marca).filter(Boolean)).size;
 
       document.getElementById('kpiUnidades').innerText = totalUnits.toLocaleString();
@@ -275,7 +279,7 @@
       tbody.innerHTML = '';
 
       if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-400">No se encontraron registros.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-6 text-slate-400">No se encontraron registros.</td></tr>';
         return;
       }
 
@@ -294,7 +298,8 @@
           <td class="px-4 py-3">
             <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium text-[11px]">${item.marca}</span>
           </td>
-          <td class="px-4 py-3 text-slate-600 font-medium">${item.bodega}</td>
+          <td class="px-4 py-3 text-slate-600 font-medium">${item.sede}</td>
+          <td class="px-4 py-3 text-slate-500 font-mono text-[11px]">${item.consBodega}</td>
           <td class="px-4 py-3 text-right font-bold text-slate-800">${item.cantidad.toLocaleString()}</td>
           <td class="px-4 py-3 text-center">${ivaBadge}</td>
         `;
@@ -303,14 +308,14 @@
     }
 
     function renderCharts(data) {
-      const bodegaGroup = {};
+      const sedeGroup = {};
       data.forEach(d => {
-        bodegaGroup[d.bodega] = (bodegaGroup[d.bodega] || 0) + d.cantidad;
+        if (d.sede) sedeGroup[d.sede] = (sedeGroup[d.sede] || 0) + d.cantidad;
       });
 
       const marcaGroup = {};
       data.forEach(d => {
-        marcaGroup[d.marca] = (marcaGroup[d.marca] || 0) + d.cantidad;
+        if (d.marca) marcaGroup[d.marca] = (marcaGroup[d.marca] || 0) + d.cantidad;
       });
 
       const ctxBar = document.getElementById('barChart').getContext('2d');
@@ -318,10 +323,10 @@
       barChartInst = new Chart(ctxBar, {
         type: 'bar',
         data: {
-          labels: Object.keys(bodegaGroup),
+          labels: Object.keys(sedeGroup),
           datasets: [{
             label: 'Unidades',
-            data: Object.values(bodegaGroup),
+            data: Object.values(sedeGroup),
             backgroundColor: '#4f46e5',
             borderRadius: 8
           }]
