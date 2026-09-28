@@ -189,35 +189,51 @@
 
     async function loadDataFromGoogleSheets() {
       const icon = document.getElementById('refreshIcon');
+      const tbody = document.getElementById('tableBody');
+      
       if (icon) icon.classList.add('fa-spin');
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Cargando datos desde Google Sheets...</td></tr>';
+      }
 
       try {
-        const response = await fetch(API_URL);
+        // Se agrega method: "GET" y redirect: "follow" para solucionar problemas CORS de Google Apps Script
+        const response = await fetch(API_URL, {
+          method: "GET",
+          redirect: "follow",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error en la petición: ${response.status} ${response.statusText}`);
+        }
+
         const rawData = await response.json();
 
         if (Array.isArray(rawData)) {
-          // Mapeo exacto según las columnas de la hoja de cálculo
           inventoryData = rawData.map(item => ({
             ref: String(item["Referencia"] || item["Ref2"] || "000000"),
             detalle: String(item["Detalle"] || ""),
             marca: String(item["Marca"] || "OTRAS"),
             codMarca: String(item["Cod.Marca"] || ""),
-            sede: String(item["Bodega"] || ""),             // Columna F (Sede / Ciudad)
-            consBodega: String(item["CONS BODEGA"] || ""),   // Columna G (Código/Consecutivo Bodega)
-            cantidad: Number(item["Cantidad"] || 0),        // Columna H
-            porcentajeIva: String(item["Porcentaje iva"] || ""), // Columna I
-            iva: String(item["Tarifa de iva"] || "EXENTO")  // Columna J
+            sede: String(item["Bodega"] || ""),
+            consBodega: String(item["CONS BODEGA"] || ""),
+            cantidad: Number(item["Cantidad"] || 0),
+            porcentajeIva: String(item["Porcentaje iva"] || ""),
+            iva: String(item["Tarifa de iva"] || "EXENTO")
           }));
 
           populateSelectOptions();
           applyFilters();
         } else {
           console.error("Respuesta no válida de Apps Script:", rawData);
-          document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="text-center py-6 text-red-500 font-semibold">Error al obtener los datos. Verifica Apps Script.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-6 text-red-500 font-semibold">Error al obtener los datos. Verifica que la respuesta de Apps Script sea un arreglo JSON válido.</td></tr>';
         }
       } catch (error) {
         console.error("Error al obtener los datos:", error);
-        document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="text-center py-6 text-red-500 font-semibold">No se pudo conectar con Google Sheets.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-6 text-red-500 font-semibold">No se pudo conectar con Google Sheets. Verifica los permisos de acceso de Apps Script.</td></tr>';
       } finally {
         if (icon) icon.classList.remove('fa-spin');
       }
@@ -230,18 +246,18 @@
       const selectBodega = document.getElementById('selectBodega');
       const selectMarca = document.getElementById('selectMarca');
 
-      selectBodega.innerHTML = '<option value="">Todas las Sedes</option>';
-      sedes.forEach(s => selectBodega.innerHTML += `<option value="${s}">${s}</option>`);
+      selectBodega.innerHTML = '<option value="">Todas las Sedes</option>' + 
+        sedes.map(s => `<option value="${s}">${s}</option>`).join('');
 
-      selectMarca.innerHTML = '<option value="">Todas las Marcas</option>';
-      marcas.forEach(m => selectMarca.innerHTML += `<option value="${m}">${m}</option>`);
+      selectMarca.innerHTML = '<option value="">Todas las Marcas</option>' + 
+        marcas.map(m => `<option value="${m}">${m}</option>`).join('');
     }
 
     function applyFilters() {
       const selectedSede = document.getElementById('selectBodega').value;
       const selectedMarca = document.getElementById('selectMarca').value;
       const selectedIva = document.getElementById('selectIva').value;
-      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
 
       const filtered = inventoryData.filter(item => {
         const matchSede = !selectedSede || item.sede === selectedSede;
@@ -276,45 +292,42 @@
 
     function renderTable(data) {
       const tbody = document.getElementById('tableBody');
-      tbody.innerHTML = '';
 
       if (data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="text-center py-6 text-slate-400">No se encontraron registros.</td></tr>';
         return;
       }
 
-      data.forEach(item => {
-        const row = document.createElement('tr');
-        row.className = "hover:bg-slate-50 transition-colors";
-
+      const rowsHtml = data.map(item => {
         const isExento = item.iva.toUpperCase().includes('EXENTO');
         const ivaBadge = isExento 
           ? '<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 tracking-wide">EXENTO</span>'
           : '<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 tracking-wide">GRAVADO AL 19%</span>';
 
-        row.innerHTML = `
-          <td class="px-4 py-3 font-semibold text-slate-700">${item.ref}</td>
-          <td class="px-4 py-3 font-medium text-slate-800">${item.detalle}</td>
-          <td class="px-4 py-3">
-            <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium text-[11px]">${item.marca}</span>
-          </td>
-          <td class="px-4 py-3 text-slate-600 font-medium">${item.sede}</td>
-          <td class="px-4 py-3 text-slate-500 font-mono text-[11px]">${item.consBodega}</td>
-          <td class="px-4 py-3 text-right font-bold text-slate-800">${item.cantidad.toLocaleString()}</td>
-          <td class="px-4 py-3 text-center">${ivaBadge}</td>
+        return `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="px-4 py-3 font-semibold text-slate-700">${item.ref}</td>
+            <td class="px-4 py-3 font-medium text-slate-800">${item.detalle}</td>
+            <td class="px-4 py-3">
+              <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium text-[11px]">${item.marca}</span>
+            </td>
+            <td class="px-4 py-3 text-slate-600 font-medium">${item.sede}</td>
+            <td class="px-4 py-3 text-slate-500 font-mono text-[11px]">${item.consBodega}</td>
+            <td class="px-4 py-3 text-right font-bold text-slate-800">${item.cantidad.toLocaleString()}</td>
+            <td class="px-4 py-3 text-center">${ivaBadge}</td>
+          </tr>
         `;
-        tbody.appendChild(row);
-      });
+      }).join('');
+
+      tbody.innerHTML = rowsHtml;
     }
 
     function renderCharts(data) {
       const sedeGroup = {};
+      const marcaGroup = {};
+
       data.forEach(d => {
         if (d.sede) sedeGroup[d.sede] = (sedeGroup[d.sede] || 0) + d.cantidad;
-      });
-
-      const marcaGroup = {};
-      data.forEach(d => {
         if (d.marca) marcaGroup[d.marca] = (marcaGroup[d.marca] || 0) + d.cantidad;
       });
 
