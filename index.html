@@ -197,13 +197,10 @@
       }
 
       try {
-        // Se agrega method: "GET" y redirect: "follow" para solucionar problemas CORS de Google Apps Script
+        // Se realiza la petición limpia sin 'headers' ni 'mode' restrictivos para evitar bloqueos CORS en Apps Script
         const response = await fetch(API_URL, {
           method: "GET",
-          redirect: "follow",
-          headers: {
-            "Content-Type": "text/plain;charset=utf-8"
-          }
+          redirect: "follow"
         });
 
         if (!response.ok) {
