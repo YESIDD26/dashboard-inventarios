@@ -67,7 +67,7 @@
           <i class="fa-solid fa-warehouse text-xl"></i>
         </div>
         <div>
-          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Sedes Activas</span>
+          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Sedes / Bodegas</span>
           <span class="text-2xl font-extrabold text-slate-800" id="kpiSedes">0</span>
         </div>
       </div>
@@ -96,7 +96,7 @@
         <div>
           <label class="block text-xs font-semibold text-slate-500 mb-1">Sede / Bodega</label>
           <select id="selectBodega" onchange="applyFilters()" class="w-full bg-slate-50 border border-slate-300 text-slate-700 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-indigo-500">
-            <option value="">Todas las Sedes</option>
+            <option value="">Todas las Bodegas Autorizadas</option>
           </select>
         </div>
         <div>
@@ -110,7 +110,7 @@
           <select id="selectIva" onchange="applyFilters()" class="w-full bg-slate-50 border border-slate-300 text-slate-700 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-indigo-500">
             <option value="">Todos los Tratamientos IVA</option>
             <option value="EXENTO">EXENTO</option>
-            <option value="GRAVADO AL 19%">GRAVADO AL 19%</option>
+            <option value="GRAVADO">GRAVADO AL 19%</option>
           </select>
         </div>
       </div>
@@ -120,7 +120,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
         <h3 class="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
-          <i class="fa-solid fa-chart-simple text-indigo-600"></i> Stock por Sede Consolidada
+          <i class="fa-solid fa-chart-simple text-indigo-600"></i> Stock por Bodega Autorizada
         </h3>
         <div class="h-64 relative">
           <canvas id="barChart"></canvas>
@@ -183,6 +183,18 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbw_7Kqupkzb8O2vCKZOGYq6Cx2MKZ-Gd5HZA6YGlnu8zAVFOUhWL0pRg_6Dp6CWwhCq/exec";
     
+    // Lista explícita de bodegas permitidas
+    const BODEGAS_PERMITIDAS = [
+      "AGUACHICA",
+      "B2B AGUACHICA",
+      "VALLEDUPAR",
+      "B2B VALLEDUPAR",
+      "BARRANQUILLA",
+      "B2B BARRANQUILLA",
+      "BODEGA PRINCIPAL",
+      "B2B PRINCIPAL"
+    ];
+
     let inventoryData = [];
     let barChartInst = null;
     let donutChartInst = null;
@@ -197,7 +209,6 @@
       }
 
       try {
-        // Se realiza la petición limpia sin 'headers' ni 'mode' restrictivos para evitar bloqueos CORS en Apps Script
         const response = await fetch(API_URL, {
           method: "GET",
           redirect: "follow"
@@ -210,17 +221,28 @@
         const rawData = await response.json();
 
         if (Array.isArray(rawData)) {
-          inventoryData = rawData.map(item => ({
-            ref: String(item["Referencia"] || item["Ref2"] || "000000"),
-            detalle: String(item["Detalle"] || ""),
-            marca: String(item["Marca"] || "OTRAS"),
-            codMarca: String(item["Cod.Marca"] || ""),
-            sede: String(item["Bodega"] || ""),
-            consBodega: String(item["CONS BODEGA"] || ""),
-            cantidad: Number(item["Cantidad"] || 0),
-            porcentajeIva: String(item["Porcentaje iva"] || ""),
-            iva: String(item["Tarifa de iva"] || "EXENTO")
-          }));
+          // Filtrado y mapeo exclusivo para las 8 bodegas permitidas
+          inventoryData = rawData
+            .map(item => {
+              const cant = Number(item["Cantid"] !== undefined ? item["Cantid"] : (item["Cantidad"] || 0));
+              const bodegaVal = String(item["Bodega"] || item["CONS BODEG"] || "").trim();
+              const consBodegaVal = String(item["CONS BODEG"] || item["Bodega"] || "").trim();
+              const tarifaIvaVal = String(item["Tarifa de iva"] || item["Tarifa iva"] || "EXENTO").trim();
+
+              return {
+                ref: String(item["Referencia"] || item["Ref2"] || "000000"),
+                detalle: String(item["Detalle"] || ""),
+                marca: String(item["Marca"] || "OTRAS"),
+                codMarca: String(item["Cod.Ma"] || item["Cod.Marca"] || ""),
+                sede: bodegaVal,
+                consBodega: consBodegaVal,
+                cantidad: isNaN(cant) ? 0 : cant,
+                porcentajeIva: String(item["Porcentaje i"] || item["Porcentaje iva"] || "0"),
+                iva: tarifaIvaVal
+              };
+            })
+            // Filtro estricto (no distingue mayúsculas/minúsculas)
+            .filter(item => BODEGAS_PERMITIDAS.some(b => b.toLowerCase() === item.sede.toLowerCase()));
 
           populateSelectOptions();
           applyFilters();
@@ -237,13 +259,14 @@
     }
 
     function populateSelectOptions() {
+      // Filtrar sedes asegurando solo incluir de la lista autorizada
       const sedes = [...new Set(inventoryData.map(d => d.sede).filter(Boolean))].sort();
       const marcas = [...new Set(inventoryData.map(d => d.marca).filter(Boolean))].sort();
 
       const selectBodega = document.getElementById('selectBodega');
       const selectMarca = document.getElementById('selectMarca');
 
-      selectBodega.innerHTML = '<option value="">Todas las Sedes</option>' + 
+      selectBodega.innerHTML = '<option value="">Todas las Bodegas Autorizadas</option>' + 
         sedes.map(s => `<option value="${s}">${s}</option>`).join('');
 
       selectMarca.innerHTML = '<option value="">Todas las Marcas</option>' + 
@@ -259,7 +282,14 @@
       const filtered = inventoryData.filter(item => {
         const matchSede = !selectedSede || item.sede === selectedSede;
         const matchMarca = !selectedMarca || item.marca === selectedMarca;
-        const matchIva = !selectedIva || item.iva.toUpperCase().includes(selectedIva.toUpperCase());
+        
+        let matchIva = true;
+        if (selectedIva === "EXENTO") {
+          matchIva = item.iva === "1" || item.porcentajeIva === "0" || item.iva.toUpperCase().includes("EXENTO");
+        } else if (selectedIva === "GRAVADO") {
+          matchIva = item.iva === "19" || item.porcentajeIva === "19" || item.iva.toUpperCase().includes("19");
+        }
+
         const matchSearch = !searchTerm || 
           item.ref.toLowerCase().includes(searchTerm) || 
           item.detalle.toLowerCase().includes(searchTerm) ||
@@ -291,12 +321,12 @@
       const tbody = document.getElementById('tableBody');
 
       if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-6 text-slate-400">No se encontraron registros.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-6 text-slate-400">No se encontraron registros en las bodegas autorizadas.</td></tr>';
         return;
       }
 
       const rowsHtml = data.map(item => {
-        const isExento = item.iva.toUpperCase().includes('EXENTO');
+        const isExento = item.iva === "1" || item.porcentajeIva === "0" || item.iva.toUpperCase().includes('EXENTO');
         const ivaBadge = isExento 
           ? '<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 tracking-wide">EXENTO</span>'
           : '<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 tracking-wide">GRAVADO AL 19%</span>';
